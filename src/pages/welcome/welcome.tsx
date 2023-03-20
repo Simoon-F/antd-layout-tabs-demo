@@ -1,6 +1,6 @@
 import { LeftOutlined, RightOutlined } from "@ant-design/icons";
 import { Button, Layout, Menu, MenuProps, Tabs } from "antd";
-import { SetStateAction, useRef, useState } from "react";
+import { useState } from "react";
 
 const { Sider } = Layout;
 
@@ -43,16 +43,17 @@ const items: MenuItem[] = [
     getItem("Option 11", "11"),
     getItem("Option 12", "12"),
   ]),
+  getItem("FAQ", "sub5"),
 ];
 
 const rootSubmenuKeys = ["sub1", "sub2", "sub4"];
 
 export const Welcome = () => {
-  const [activeTab, setActiveTab] = useState("");
+  const [activeTab, setActiveTab] = useState<string>("");
+
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
 
   const [panes, setPanes] = useState([]);
-
-  const tabsRef = useRef<any>(null);
 
   const handleMenuClick = (menuItem: any) => {
     const { key, title } = menuItem;
@@ -71,8 +72,32 @@ export const Welcome = () => {
     }
   };
 
-  const handleTabChange = (key: SetStateAction<string>) => {
+  const findMenuItem = (items: MenuItem[], key: string): string[] | null => {
+    for (const item of items) {
+      if (item.key === key) {
+        return [key]; // 返回当前菜单项的key
+      } else if (item.children) {
+        const childResult = findMenuItem(item.children, key);
+
+        if (childResult) {
+          return [item.key, ...childResult]; // 将当前菜单项的key和子菜单的key合并返回
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const handleTabChange = (key: string) => {
     setActiveTab(key);
+
+    const result = findMenuItem(items, key);
+
+    if (result) {
+      setOpenKeys(result);
+
+      setSelectedKeys(result);
+    }
   };
 
   const renderTabItems = () => {
@@ -83,40 +108,9 @@ export const Welcome = () => {
     }));
   };
 
-  const handlePrevClick = () => {
-    const tabsNode: any = document.querySelector(".ant-tabs-nav-list");
+  const handlePrevClick = () => {};
 
-    const tabsWrapperNode = tabsNode.parentElement;
-
-    const availableWidth = tabsWrapperNode.clientWidth;
-
-    const currentX =
-      parseInt(getComputedStyle(tabsNode).transform.split(",")[4].trim()) || 0;
-
-    const newX = Math.min(0, currentX + availableWidth);
-
-    tabsNode.style = `transform: translate(${newX}px, 0px);`;
-  };
-
-  const handleNextClick = () => {
-    const tabsNode: any = document.querySelector(".ant-tabs-nav-list");
-
-    const tabsWrapperNode = tabsNode.parentElement;
-
-    const availableWidth = tabsWrapperNode.clientWidth;
-
-    const currentX =
-      parseInt(getComputedStyle(tabsNode).transform.split(",")[4].trim()) || 0;
-
-    const totalWidth = tabsNode.scrollWidth;
-
-    const newX = Math.max(
-      -totalWidth + availableWidth,
-      currentX - availableWidth
-    );
-
-    tabsNode.style = `transform: translate(${newX}px, 0px);`;
-  };
+  const handleNextClick = () => {};
 
   const tabBarExtraContent = panes.length > 3 && (
     <>
@@ -151,10 +145,11 @@ export const Welcome = () => {
             })
           }
           openKeys={openKeys}
-          onOpenChange={onOpenChange}
+          onOpenChange={onOpenChange} // 折叠板
+          selectedKeys={selectedKeys} // 菜单选中
         />
       </Sider>
-      <Layout ref={tabsRef} style={{ padding: "0 24px 24px" }}>
+      <Layout style={{ padding: "0 24px 24px" }}>
         <Tabs
           items={renderTabItems()}
           moreIcon={false}
